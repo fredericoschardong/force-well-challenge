@@ -191,6 +191,29 @@ def mlp_classifier(X_train, X_test, y_train, y_test):
         print(s, clf.best_params_, file=f)
         print_helper(y_test, y_pred, f)
 
+def find_best_logistic_regression_params(X_train, X_test, y_train, y_test):
+    with open('results logistic_regression.html', 'a') as f:
+        start = time.time()
+        
+        parameters = {'penality': ['l1', 'l2', 'elasticnet', 'none'],
+                      'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'}],
+                      'multi_class': ['auto', 'ovr', 'multinomial'],
+                      'dual': [True, False],
+                      'C': [0.1, 1, 10],
+                      'fit_intercept': [True, False],
+                      'class_weight': ['balanced', {1:20, 2:10, 3:1}]}
+
+        clf = GridSearchCV(LogisticRegression(max_iter=10000, random_state=1), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
+        clf.fit(X_train, y_train)#.ravel())
+        y_true, y_pred = y_test, clf.predict(X_test)
+
+        print(classification_report(y_true, y_pred))
+        print(clf.best_params_, file=f)
+        print("total time for logistic_regression", time.time() - start, file=f)
+
+        print_helper(y_true, y_pred, f)
+
+
 def logistic_regression(X_train, X_test, y_train, y_test):
     with open('results.html', 'a') as f:
         clf = LogisticRegression(random_state=0, max_iter=10000, verbose=1, class_weight='balanced')
@@ -202,18 +225,21 @@ def logistic_regression(X_train, X_test, y_train, y_test):
         print('logistic regression results', file=f)
         print_helper(y_test, y_pred, f)
 
+#{'C': 1, 'class_weight': {1: 20, 2: 10, 3: 1}, 'degree': 2, 'gamma': 'auto', 'kernel': 'poly'} -> 0.75
 def find_best_svc_params(X_train, X_test, y_train, y_test):
     with open('results SVC.html', 'a') as f:
+        start = time.time()
+        
         parameters = {'gamma': ['auto', 'scale'],
                       'C': [0.1, 1, 10],
                       'degree': [2,3,4,5],
-                      'kernel': ['linear', 'poly', 'rbf', 'sigmoid', 'precomputed'],
-                      'random_state': [1],
-                      'max_iter': [1000],
+                      'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
+                      #'random_state': [1],
+                      #'max_iter': [10000],
                       'class_weight': ['balanced', {1:20, 2:10, 3:1}]}
 
-        clf = GridSearchCV(SVC(), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
-        clf.fit(X_train, y_train.ravel())
+        clf = GridSearchCV(SVC(max_iter=10000, random_state=1), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
+        clf.fit(X_train, y_train)#.ravel())
         y_true, y_pred = y_test, clf.predict(X_test)
 
         print(classification_report(y_true, y_pred))
@@ -257,10 +283,10 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 #print('running mlp classifier')
 #mlp_classifier(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
 
+find_best_logistic_regression_params(X_train, X_test, y_train, y_test)
 #print('running logistic regression')
 #logistic_regression(X_train, X_test, y_train, y_test)
 
-find_best_svc_params(X_train, X_test, y_train, y_test)
-
+#find_best_svc_params(X_train, X_test, y_train, y_test)
 #print('running svc')
 #svc(X_train, X_test, y_train, y_test)
