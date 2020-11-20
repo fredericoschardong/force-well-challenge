@@ -202,7 +202,27 @@ def logistic_regression(X_train, X_test, y_train, y_test):
         print('logistic regression results', file=f)
         print_helper(y_test, y_pred, f)
 
-def svc(X_train, X_test, y_train, y_test):
+def find_best_svc_params(X_train, X_test, y_train, y_test):
+    with open('results SVC.html', 'a') as f:
+        parameters = {'gamma': ['auto', 'scale'],
+                      'C': [0.1, 1, 10],
+                      'degree': [2,3,4,5],
+                      'kernel': ['linear', 'poly', 'rbf', 'sigmoid', 'precomputed'],
+                      'random_state': [1],
+                      'max_iter': [1000],
+                      'class_weight': ['balanced', {1:20, 2:10, 3:1}]}
+
+        clf = GridSearchCV(SVC(), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
+        clf.fit(X_train, y_train.ravel())
+        y_true, y_pred = y_test, clf.predict(X_test)
+
+        print(classification_report(y_true, y_pred))
+        print(clf.best_params_, file=f)
+        print("total time for svc", time.time() - start, file=f)
+
+        print_helper(y_true, y_pred, f)
+        
+def svc():
     with open('results.html', 'a') as f:
         clf = SVC(gamma='auto', random_state=0, max_iter=10000, verbose=1, class_weight='balanced')
         clf.fit(X_train, y_train, X_train['FORCE_2020_LITHOFACIES_CONFIDENCE'].map({1:20, 2:10, 3:1}).values)
@@ -212,7 +232,7 @@ def svc(X_train, X_test, y_train, y_test):
 
         print('svc results', file=f)
         print_helper(y_test, y_pred, f)
-
+    
 print('loading and grouping')
 grouped = load_and_group()
 
@@ -231,14 +251,16 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 #print('finding best mlp parameters')
 #find_best_mlp_classifier_params(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
 
-print('finding best mlp parameters 2')
-find_best_mlp_classifier_params2(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
+#print('finding best mlp parameters 2')
+#find_best_mlp_classifier_params2(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
 
 #print('running mlp classifier')
 #mlp_classifier(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
 
-print('running logistic regression')
-logistic_regression(X_train, X_test, y_train, y_test)
+#print('running logistic regression')
+#logistic_regression(X_train, X_test, y_train, y_test)
 
-print('running svc')
-svc(X_train, X_test, y_train, y_test)
+find_best_svc_params(X_train, X_test, y_train, y_test)
+
+#print('running svc')
+#svc(X_train, X_test, y_train, y_test)
