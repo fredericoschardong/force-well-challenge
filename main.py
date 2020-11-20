@@ -140,7 +140,7 @@ def find_best_mlp_classifier_params(X_train, X_test, y_train, y_test):
                           'activation': ['identity', 'logistic', 'tanh', 'relu'],
                           'alpha': [0.00001, 0.0001, 0.001, 0.01, 0.1],
                           'random_state': [1],
-                          'max_iter': [1000],
+                          'max_iter': [10000],
                           'solver': [s]}
 
             clf = GridSearchCV(MLPClassifier(), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
