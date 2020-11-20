@@ -14,15 +14,15 @@ from sklearn.metrics import classification_report
 
 def print_well(well_data, figname):
     fig, axs = plt.subplots(1, 20, figsize=(14, 4), sharey=True)
-    
+
     for ic, col in enumerate(sorted(DATA_COLUMNS)):
         axs[ic].plot(well_data[col], well_data['DEPTH_MD'])
         axs[ic].set_xlabel(col)
-        
+
     axs[0].set_ylim(well_data['DEPTH_MD'].values[-1], well_data['DEPTH_MD'].values[0])
     fig.savefig(figname, bbox_inches = 'tight', pad_inches = 0)
     plt.clf()
-    
+
 def print_histogram(well_data, figname):
     fig, ax = plt.subplots(5, 4, figsize=(20, 20))
 
@@ -33,14 +33,12 @@ def print_histogram(well_data, figname):
 
     fig.savefig(figname, bbox_inches = 'tight', pad_inches = 0)
     plt.clf()
-    
+
 def load_and_group():
     global DATA_COLUMNS
-    
+
     data = pd.read_csv('train_part_00.csv', sep=';')
     data = data.append(pd.concat((pd.read_csv(f, sep=';', names=data.columns) for f in ['train_part_01.csv', 'train_part_02.csv', 'train_part_03.csv'])))
-    
-    pdb.set_trace()
 
     DATA_COLUMNS = set(data.columns) - set(['DEPTH_MD', 'FORCE_2020_LITHOFACIES_LITHOLOGY',
                                             'FORCE_2020_LITHOFACIES_CONFIDENCE', 'WELL', 'GROUP', 'FORMATION',
@@ -57,9 +55,9 @@ def load_and_group():
     #all wells as one
     print_well(grouped.reset_index(), 'all wells as one - raw data.png')
     print_histogram(grouped, 'histogram after grouping in 5 meters (total %d items).png' % grouped.size)
-    
+
     return grouped
-    
+
 def fill(grouped):
     # testing different fillers
     '''
@@ -99,7 +97,7 @@ def fill(grouped):
     print_well(grouped_filled.reset_index(), 'all wells together - filled KNNImputer n=500.png')
 
     return grouped_filled.reset_index()
-    
+
 def normalize(data):
     for col in sorted(set(DATA_COLUMNS) - set(['DTS', 'MUDWEIGHT', 'RXO', 'DCAL'])):
         scaler = PowerTransformer()
@@ -120,7 +118,7 @@ def normalize(data):
     print_histogram(data, 'histogram normalized PowerTransformer -> QuantileTransformer -> MinMax.png')
 
     return data
-    
+
 def print_helper(y_true, y_pred, f):
     #remove unewanted data
     report = classification_report(y_true, y_pred, output_dict=True)
@@ -130,15 +128,15 @@ def print_helper(y_true, y_pred, f):
 
     print(df.to_html(float_format="%.2f", decimal=','), file=f)
     print(file=f)
-    
+
 def find_best_mlp_classifier_params(X_train, X_test, y_train, y_test):
     with open('results mlp_classifier.html', 'w') as f:
         for s in ['lbfgs', 'sgd', 'adam']:
             start = time.time()
 
             parameters = {'hidden_layer_sizes': [(5,), (10,), (20,), (50,), (100,), (5,5), (10,10), (20,20), (5,10,20), (20,10,5)],
-                          'activation': ['identity', 'logistic', 'tanh', 'relu'], 
-                          'alpha': [0.00001, 0.0001, 0.001, 0.01, 0.1], 
+                          'activation': ['identity', 'logistic', 'tanh', 'relu'],
+                          'alpha': [0.00001, 0.0001, 0.001, 0.01, 0.1],
                           'random_state': [1],
                           'max_iter': [10000],
                           'solver': [s]}
@@ -150,23 +148,23 @@ def find_best_mlp_classifier_params(X_train, X_test, y_train, y_test):
             print(classification_report(y_true, y_pred))
             print(clf.best_params_)
             print("total time for", s, time.time() - start)
-            
+
             print_helper(y_true, y_pred, f)
             f.flush()
-            
+
 #TODO implement this after finding the best parameters using find_best_mlp_classifier_params
 def mlp_classifier(X_train, X_test, y_train, y_test):
     with open('results.html', 'w') as f:
         clf = MLPClassifier()
         clf.fit(X_train, y_train)
-        
+
         y_pred = clf.predict(X_test)
         print(classification_report(y_test, y_pred))
-        
+
         print('mlp_classifier results', file=f)
         print(s, clf.best_params_, file=f)
         print_helper(y_true, y_pred, f)
-            
+
 def logistic_regression(X_train, X_test, y_train, y_test):
     with open('results.html', 'a') as f:
         clf = LogisticRegression(random_state=0, max_iter=10000, verbose=1, class_weight='balanced')
@@ -174,7 +172,7 @@ def logistic_regression(X_train, X_test, y_train, y_test):
 
         y_pred = clf.predict(X_test)
         print(classification_report(y_test, y_pred))
-        
+
         print('logistic regression results', file=f)
         print_helper(y_true, y_pred, f)
 
@@ -182,10 +180,10 @@ def svc(X_train, X_test, y_train, y_test):
     with open('results.html', 'a') as f:
         clf = SVC(gamma='auto', random_state=0, max_iter=10000, verbose=1, class_weight='balanced')
         clf.fit(X_train, y_train, X_train['FORCE_2020_LITHOFACIES_CONFIDENCE'].map({1:20, 2:10, 3:1}).values)
-        
+
         y_pred = clf.predict(X_test)
         print(classification_report(y_test, y_pred))
-        
+
         print('svc results', file=f)
         print_helper(y_true, y_pred, f)
 
