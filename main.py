@@ -134,14 +134,16 @@ def find_best_mlp_classifier_params(X_train, X_test, y_train, y_test):
         for s in ['lbfgs', 'sgd', 'adam']:
             start = time.time()
 
-            parameters = {'hidden_layer_sizes': [(5,), (10,), (20,), (50,), (100,), (5,5), (10,10), (20,20), (5,10,20), (20,10,5)],
+            parameters = {'hidden_layer_sizes': [(5,), (10,), (20,), (50,), (100,), (5,5), (10,10), (20,20), (5,10,20), (20,10,5),
+                                                 (50, 50), (50, 50, 50), (100, 100), (100, 100, 100), (10, 50, 100), (100, 50, 10),
+                                                 (30, 60), (30, 60, 90), (30, 60, 90, 120), (60, 30), (90, 60, 30), (120, 90, 60, 30)],
                           'activation': ['identity', 'logistic', 'tanh', 'relu'],
                           'alpha': [0.00001, 0.0001, 0.001, 0.01, 0.1],
                           'random_state': [1],
-                          'max_iter': [10000],
+                          'max_iter': [1000],
                           'solver': [s]}
 
-            clf = GridSearchCV(MLPClassifier(), parameters, scoring='f1_macro', n_jobs=-1, cv=5)
+            clf = GridSearchCV(MLPClassifier(), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
             clf.fit(X_train, y_train.ravel())
             y_true, y_pred = y_test, clf.predict(X_test)
 
