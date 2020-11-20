@@ -129,6 +129,8 @@ def print_helper(y_true, y_pred, f):
     print(df.to_html(float_format="%.2f", decimal=','), file=f)
     print(file=f)
 
+
+# best was {'activation': 'logistic', 'alpha': 0.1, 'hidden_layer_sizes': (100, 100), 'max_iter': 10000, 'random_state': 1, 'solver': 'lbfgs'} -> 0.82
 def find_best_mlp_classifier_params(X_train, X_test, y_train, y_test):
     with open('results mlp_classifier.html', 'w') as f:
         for s in ['lbfgs', 'sgd', 'adam']:
@@ -148,11 +150,33 @@ def find_best_mlp_classifier_params(X_train, X_test, y_train, y_test):
             y_true, y_pred = y_test, clf.predict(X_test)
 
             print(classification_report(y_true, y_pred))
-            print(clf.best_params_)
-            print("total time for", s, time.time() - start)
+            print(clf.best_params_, file=f)
+            print("total time for", s, time.time() - start, file=f)
 
             print_helper(y_true, y_pred, f)
             f.flush()
+            
+def find_best_mlp_classifier_params2(X_train, X_test, y_train, y_test):
+    with open('results mlp_classifier lbfgs.html', 'w') as f:
+        start = time.time()
+
+        parameters = {'hidden_layer_sizes': [(100, 100), (150, 150), (200, 200), (100, 200), (100,300), (200,100), (300,100)],
+                      'activation': ['logistic'],
+                      'alpha': [0.01, 0.1],
+                      'random_state': [1],
+                      'max_iter': [20000],
+                      'solver': ['lbfgs']}
+
+        clf = GridSearchCV(MLPClassifier(), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
+        clf.fit(X_train, y_train.ravel())
+        y_true, y_pred = y_test, clf.predict(X_test)
+
+        print(classification_report(y_true, y_pred))
+        print(clf.best_params_, file=f)
+        print("total time for lbfgs", time.time() - start, file=f)
+
+        print_helper(y_true, y_pred, f)
+        f.flush()
 
 #TODO implement this after finding the best parameters using find_best_mlp_classifier_params
 def mlp_classifier(X_train, X_test, y_train, y_test):
@@ -165,7 +189,7 @@ def mlp_classifier(X_train, X_test, y_train, y_test):
 
         print('mlp_classifier results', file=f)
         print(s, clf.best_params_, file=f)
-        print_helper(y_true, y_pred, f)
+        print_helper(y_test, y_pred, f)
 
 def logistic_regression(X_train, X_test, y_train, y_test):
     with open('results.html', 'a') as f:
@@ -176,7 +200,7 @@ def logistic_regression(X_train, X_test, y_train, y_test):
         print(classification_report(y_test, y_pred))
 
         print('logistic regression results', file=f)
-        print_helper(y_true, y_pred, f)
+        print_helper(y_test, y_pred, f)
 
 def svc(X_train, X_test, y_train, y_test):
     with open('results.html', 'a') as f:
@@ -187,7 +211,7 @@ def svc(X_train, X_test, y_train, y_test):
         print(classification_report(y_test, y_pred))
 
         print('svc results', file=f)
-        print_helper(y_true, y_pred, f)
+        print_helper(y_test, y_pred, f)
 
 print('loading and grouping')
 grouped = load_and_group()
@@ -204,8 +228,11 @@ y = y.map({30000: 0, 65030: 1, 65000: 2, 80000: 3, 74000: 4, 70000: 5, 70032: 6,
 X = normalized
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
 
-print('finding best mlp parameters')
-find_best_mlp_classifier_params(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
+#print('finding best mlp parameters')
+#find_best_mlp_classifier_params(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
+
+print('finding best mlp parameters 2')
+find_best_mlp_classifier_params2(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
 
 #print('running mlp classifier')
 #mlp_classifier(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
