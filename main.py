@@ -194,7 +194,7 @@ def find_best_logistic_regression_params(X_train, X_test, y_train, y_test):
                       'multi_class': ['auto', 'ovr', 'multinomial'],
                       'C': [0.1, 1, 10],
                       'fit_intercept': [True, False],
-                      'class_weight': ['balanced', {1:3, 2:2, 3:1}, {1:20, 2:10, 3:1}, {1:100, 2:10, 3:1}]}
+                      'class_weight': ['balanced', {1:3, 2:2, 3:1}, {1:20, 2:10, 3:1}, {1:100, 2:10, 3:1}, {1:1000, 2:100, 3:1}]}
 
         clf = GridSearchCV(LogisticRegression(max_iter=10000, random_state=1), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
         clf.fit(X_train, y_train)
@@ -209,7 +209,7 @@ def find_best_logistic_regression_params(X_train, X_test, y_train, y_test):
 
 def logistic_regression(X_train, X_test, y_train, y_test):
     with open('results.html', 'a') as f:
-        clf = LogisticRegression(random_state=1, max_iter=100000)
+        clf = LogisticRegression(solver='lbfgs', multi_class='auto',C=1,fit_intercept=True,class_weight={1:1000, 2:100, 3:1},random_state=1, max_iter=100000)
         clf.fit(X_train, y_train)#, X_train['FORCE_2020_LITHOFACIES_CONFIDENCE'].map({1:1000, 2:100, 3:1}).values)
 
         y_pred = clf.predict(X_test)
@@ -232,7 +232,7 @@ def find_best_svc_params(X_train, X_test, y_train, y_test):
                       'C': [0.1, 1, 10],
                       'degree': [2,3,4,5],
                       'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
-                      'class_weight': ['balanced', {1:3, 2:2, 3:1}, {1:20, 2:10, 3:1}, {1:100, 2:10, 3:1}]}
+                      'class_weight': ['balanced', {1:3, 2:2, 3:1}, {1:20, 2:10, 3:1}, {1:100, 2:10, 3:1}, {1:1000, 2:100, 3:1}]}
 
         clf = GridSearchCV(SVC(max_iter=10000, random_state=1), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
         clf.fit(X_train, y_train)
@@ -278,17 +278,17 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 #print('finding best mlp parameters')
 #find_best_mlp_classifier_params(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
 
-print('finding best logistic regression parameters')
-find_best_logistic_regression_params(X_train, X_test, y_train, y_test)
+#print('finding best logistic regression parameters')
+#find_best_logistic_regression_params(X_train, X_test, y_train, y_test)
 
 #print('finding best svc parameters')
 #find_best_svc_params(X_train, X_test, y_train, y_test)
 
-#print('running mlp classifier')
-#mlp_classifier(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
+print('running mlp classifier')
+mlp_classifier(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
 
-#print('running logistic regression')
-#logistic_regression(X_train, X_test, y_train, y_test)
+print('running logistic regression')
+logistic_regression(X_train, X_test, y_train, y_test)
 
-#print('running svc')
-#svc(X_train, X_test, y_train, y_test)
+print('running svc')
+svc(X_train, X_test, y_train, y_test)
