@@ -118,6 +118,20 @@ def normalize(data):
     print_histogram(data, 'histogram normalized PowerTransformer -> QuantileTransformer -> MinMax.png')
 
     return data
+    
+A = np.load('penalty_matrix.npy')
+
+def score(y_true, y_pred):
+    S = 0.0
+    
+    y_true = y_true.astype(int)
+    y_pred = y_pred.astype(int)
+    
+    for i in range(0, y_true.shape[0]):
+        S -= A[y_true[i], y_pred[i]]
+        
+    return S / y_true.shape[0]
+
 
 def print_helper(y_true, y_pred, f):
     #remove unewanted data
@@ -129,7 +143,6 @@ def print_helper(y_true, y_pred, f):
     print(df.to_html(float_format="%.2f", decimal=','), file=f)
     print(file=f)
 
-
 # best was {'activation': 'logistic', 'alpha': 0.1, 'hidden_layer_sizes': (100, 100), 'max_iter': 10000, 'random_state': 1, 'solver': 'lbfgs'} -> 0.82
 def find_best_mlp_classifier_params(X_train, X_test, y_train, y_test):
     with open('results mlp_classifier.html', 'w') as f:
@@ -138,14 +151,13 @@ def find_best_mlp_classifier_params(X_train, X_test, y_train, y_test):
 
             parameters = {'hidden_layer_sizes': [(5,), (10,), (20,), (50,), (100,), (5,5), (10,10), (20,20), (5,10,20), (20,10,5),
                                                  (50, 50), (50, 50, 50), (100, 100), (100, 100, 100), (10, 50, 100), (100, 50, 10),
-                                                 (30, 60), (30, 60, 90), (30, 60, 90, 120), (60, 30), (90, 60, 30), (120, 90, 60, 30)],
+                                                 (30, 60), (30, 60, 90), (30, 60, 90, 120), (60, 30), (90, 60, 30), (120, 90, 60, 30),
+                                                 (100, 100), (150, 150), (200, 200), (100, 200), (100,300), (200,100), (300,100)],
                           'activation': ['identity', 'logistic', 'tanh', 'relu'],
                           'alpha': [0.00001, 0.0001, 0.001, 0.01, 0.1],
-                          'random_state': [1],
-                          'max_iter': [10000],
                           'solver': [s]}
 
-            clf = GridSearchCV(MLPClassifier(), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
+            clf = GridSearchCV(MLPClassifier(max_iter=10000, random_state=1), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
             clf.fit(X_train, y_train.ravel())
             y_true, y_pred = y_test, clf.predict(X_test)
 
@@ -156,32 +168,10 @@ def find_best_mlp_classifier_params(X_train, X_test, y_train, y_test):
             print_helper(y_true, y_pred, f)
             f.flush()
             
-def find_best_mlp_classifier_params2(X_train, X_test, y_train, y_test):
-    with open('results mlp_classifier lbfgs.html', 'w') as f:
-        start = time.time()
-
-        parameters = {'hidden_layer_sizes': [(100, 100), (150, 150), (200, 200), (100, 200), (100,300), (200,100), (300,100)],
-                      'activation': ['logistic'],
-                      'alpha': [0.01, 0.1],
-                      'random_state': [1],
-                      'max_iter': [20000],
-                      'solver': ['lbfgs']}
-
-        clf = GridSearchCV(MLPClassifier(), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
-        clf.fit(X_train, y_train.ravel())
-        y_true, y_pred = y_test, clf.predict(X_test)
-
-        print(classification_report(y_true, y_pred))
-        print(clf.best_params_, file=f)
-        print("total time for lbfgs", time.time() - start, file=f)
-
-        print_helper(y_true, y_pred, f)
-        f.flush()
-
 #TODO implement this after finding the best parameters using find_best_mlp_classifier_params
 def mlp_classifier(X_train, X_test, y_train, y_test):
     with open('results.html', 'w') as f:
-        clf = MLPClassifier()
+        clf = MLPClassifier(activation='logistic', alpha=0.1, hidden_layer_sizes=(100, 100), solver='lbfgs', max_iter=100000, random_state=1)
         clf.fit(X_train, y_train)
 
         y_pred = clf.predict(X_test)
@@ -190,21 +180,24 @@ def mlp_classifier(X_train, X_test, y_train, y_test):
         print('mlp_classifier results', file=f)
         print(s, clf.best_params_, file=f)
         print_helper(y_test, y_pred, f)
+        
+        result = 'MLPClassifier score (considering matrix of penalities): %.2f' % score(y_test.values, y_pred)
+        
+        print(result)
+        print(result, file=f)
 
 def find_best_logistic_regression_params(X_train, X_test, y_train, y_test):
     with open('results logistic_regression.html', 'a') as f:
         start = time.time()
         
-        parameters = {'penality': ['l1', 'l2', 'elasticnet', 'none'],
-                      'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'}],
+        parameters = {'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
                       'multi_class': ['auto', 'ovr', 'multinomial'],
-                      'dual': [True, False],
                       'C': [0.1, 1, 10],
                       'fit_intercept': [True, False],
-                      'class_weight': ['balanced', {1:20, 2:10, 3:1}]}
+                      'class_weight': ['balanced', {1:3, 2:2, 3:1}, {1:20, 2:10, 3:1}, {1:100, 2:10, 3:1}]}
 
         clf = GridSearchCV(LogisticRegression(max_iter=10000, random_state=1), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
-        clf.fit(X_train, y_train)#.ravel())
+        clf.fit(X_train, y_train)
         y_true, y_pred = y_test, clf.predict(X_test)
 
         print(classification_report(y_true, y_pred))
@@ -216,16 +209,21 @@ def find_best_logistic_regression_params(X_train, X_test, y_train, y_test):
 
 def logistic_regression(X_train, X_test, y_train, y_test):
     with open('results.html', 'a') as f:
-        clf = LogisticRegression(random_state=0, max_iter=10000, verbose=1, class_weight='balanced')
-        clf.fit(X_train, y_train, X_train['FORCE_2020_LITHOFACIES_CONFIDENCE'].map({1:1000, 2:100, 3:1}).values)
+        clf = LogisticRegression(random_state=1, max_iter=100000)
+        clf.fit(X_train, y_train)#, X_train['FORCE_2020_LITHOFACIES_CONFIDENCE'].map({1:1000, 2:100, 3:1}).values)
 
         y_pred = clf.predict(X_test)
         print(classification_report(y_test, y_pred))
 
         print('logistic regression results', file=f)
         print_helper(y_test, y_pred, f)
+        
+        result = 'logistic regression score (considering matrix of penalities): %.2f' % score(y_test.values, y_pred)
+        
+        print(result)
+        print(result, file=f)
 
-#{'C': 1, 'class_weight': {1: 20, 2: 10, 3: 1}, 'degree': 2, 'gamma': 'auto', 'kernel': 'poly'} -> 0.75
+#best was {'C': 1, 'class_weight': {1: 20, 2: 10, 3: 1}, 'degree': 2, 'gamma': 'auto', 'kernel': 'poly'} -> 0.75
 def find_best_svc_params(X_train, X_test, y_train, y_test):
     with open('results SVC.html', 'a') as f:
         start = time.time()
@@ -234,12 +232,10 @@ def find_best_svc_params(X_train, X_test, y_train, y_test):
                       'C': [0.1, 1, 10],
                       'degree': [2,3,4,5],
                       'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
-                      #'random_state': [1],
-                      #'max_iter': [10000],
-                      'class_weight': ['balanced', {1:20, 2:10, 3:1}]}
+                      'class_weight': ['balanced', {1:3, 2:2, 3:1}, {1:20, 2:10, 3:1}, {1:100, 2:10, 3:1}]}
 
         clf = GridSearchCV(SVC(max_iter=10000, random_state=1), parameters, scoring='f1_macro', n_jobs=-1, cv=4)
-        clf.fit(X_train, y_train)#.ravel())
+        clf.fit(X_train, y_train)
         y_true, y_pred = y_test, clf.predict(X_test)
 
         print(classification_report(y_true, y_pred))
@@ -248,17 +244,22 @@ def find_best_svc_params(X_train, X_test, y_train, y_test):
 
         print_helper(y_true, y_pred, f)
         
-def svc():
+def svc(X_train, X_test, y_train, y_test):
     with open('results.html', 'a') as f:
-        clf = SVC(gamma='auto', random_state=0, max_iter=10000, verbose=1, class_weight='balanced')
-        clf.fit(X_train, y_train, X_train['FORCE_2020_LITHOFACIES_CONFIDENCE'].map({1:20, 2:10, 3:1}).values)
+        clf = SVC(gamma='auto', kernel='poly', degree=2, class_weight={1: 20, 2: 10, 3: 1}, random_state=1, max_iter=100000)
+        clf.fit(X_train, y_train)#, X_train['FORCE_2020_LITHOFACIES_CONFIDENCE'].map({1:20, 2:10, 3:1}).values)
 
         y_pred = clf.predict(X_test)
         print(classification_report(y_test, y_pred))
 
         print('svc results', file=f)
         print_helper(y_test, y_pred, f)
-    
+        
+        result = 'svc score (considering matrix of penalities): %.2f' % score(y_test.values, y_pred)
+        
+        print(result)
+        print(result, file=f)
+
 print('loading and grouping')
 grouped = load_and_group()
 
@@ -277,16 +278,17 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 #print('finding best mlp parameters')
 #find_best_mlp_classifier_params(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
 
-#print('finding best mlp parameters 2')
-#find_best_mlp_classifier_params2(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
+print('finding best logistic regression parameters')
+find_best_logistic_regression_params(X_train, X_test, y_train, y_test)
+
+#print('finding best svc parameters')
+#find_best_svc_params(X_train, X_test, y_train, y_test)
 
 #print('running mlp classifier')
 #mlp_classifier(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
 
-find_best_logistic_regression_params(X_train, X_test, y_train, y_test)
 #print('running logistic regression')
 #logistic_regression(X_train, X_test, y_train, y_test)
 
-#find_best_svc_params(X_train, X_test, y_train, y_test)
 #print('running svc')
 #svc(X_train, X_test, y_train, y_test)
