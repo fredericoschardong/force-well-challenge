@@ -168,9 +168,8 @@ def find_best_mlp_classifier_params(X_train, X_test, y_train, y_test):
             print_helper(y_true, y_pred, f)
             f.flush()
             
-#TODO implement this after finding the best parameters using find_best_mlp_classifier_params
 def mlp_classifier(X_train, X_test, y_train, y_test):
-    with open('results.html', 'w') as f:
+    with open('results.html', 'a') as f:
         clf = MLPClassifier(activation='logistic', alpha=0.1, hidden_layer_sizes=(100, 100), solver='lbfgs', max_iter=100000, random_state=1)
         clf.fit(X_train, y_train)
 
@@ -178,7 +177,7 @@ def mlp_classifier(X_train, X_test, y_train, y_test):
         print(classification_report(y_test, y_pred))
 
         print('mlp_classifier results', file=f)
-        print(s, clf.best_params_, file=f)
+        print(clf.best_params_, file=f)
         print_helper(y_test, y_pred, f)
         
         result = 'MLPClassifier score (considering matrix of penalities): %.2f' % score(y_test.values, y_pred)
@@ -209,8 +208,8 @@ def find_best_logistic_regression_params(X_train, X_test, y_train, y_test):
 
 def logistic_regression(X_train, X_test, y_train, y_test):
     with open('results.html', 'a') as f:
-        clf = LogisticRegression(solver='lbfgs', multi_class='auto',C=1,fit_intercept=True,class_weight={1:1000, 2:100, 3:1},random_state=1, max_iter=100000)
-        clf.fit(X_train, y_train)#, X_train['FORCE_2020_LITHOFACIES_CONFIDENCE'].map({1:1000, 2:100, 3:1}).values)
+        clf = LogisticRegression(random_state=1, max_iter=100000)
+        clf.fit(X_train, y_train)
 
         y_pred = clf.predict(X_test)
         print(classification_report(y_test, y_pred))
@@ -246,8 +245,8 @@ def find_best_svc_params(X_train, X_test, y_train, y_test):
         
 def svc(X_train, X_test, y_train, y_test):
     with open('results.html', 'a') as f:
-        clf = SVC(gamma='auto', kernel='poly', degree=2, class_weight={1: 20, 2: 10, 3: 1}, random_state=1, max_iter=100000,verbose=10)
-        clf.fit(X_train, y_train)#, X_train['FORCE_2020_LITHOFACIES_CONFIDENCE'].map({1:20, 2:10, 3:1}).values)
+        clf = SVC(gamma='auto', kernel='poly', degree=2, class_weight={1: 20, 2: 10, 3: 1}, random_state=1, max_iter=100000)
+        clf.fit(X_train, y_train)
 
         y_pred = clf.predict(X_test)
         print(classification_report(y_test, y_pred))
@@ -281,14 +280,14 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 #print('finding best logistic regression parameters')
 #find_best_logistic_regression_params(X_train, X_test, y_train, y_test)
 
-print('finding best svc parameters')
-find_best_svc_params(X_train, X_test, y_train, y_test)
+#print('finding best svc parameters')
+#find_best_svc_params(X_train, X_test, y_train, y_test)
 
-#print('running mlp classifier')
-#mlp_classifier(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
+print('running mlp classifier')
+mlp_classifier(X_train[DATA_COLUMNS], X_test[DATA_COLUMNS], y_train, y_test)
 
-#print('running logistic regression')
-#logistic_regression(X_train, X_test, y_train, y_test)
+print('running logistic regression')
+logistic_regression(X_train, X_test, y_train, y_test)
 
-#print('running svc')
-#svc(X_train, X_test, y_train, y_test)
+print('running svc')
+svc(X_train, X_test, y_train, y_test)
